@@ -1,0 +1,21 @@
+# Editor / OS noise
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Secrets — credential files stay local, only secrets/README.md is tracked.
+secrets/*.local
+
+# Large / ephemeral files
+*.img
+*.img.gz
+
+# PPP data: the RINEX observation files and the NRCan report sets pin the
+# base position to mm and the 1 Hz RINEX is ~96 MB. Only each run's README
+# (with rounded coordinates) is public; the data stays on disk / in backups.
+ppp/*/*
+!ppp/*/README.md
