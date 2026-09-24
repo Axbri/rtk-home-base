@@ -52,20 +52,48 @@ real systematic error, not noise.
 2. **Galileo not processed** — the data was submitted the day after collection, so only
    ultra-rapid products existed and that line carries no Galileo. GLONASS was used but
    with estimated PCOs and no ambiguity fixing (`IAR GLO OFF`), so this is effectively a
-   GPS-only solution. **Resubmitting the same file once IGS Finals are out (~2 weeks)
-   would add Galileo and tighten the sigmas** — expect mm in plan, ~1 cm in height.
+   GPS-only solution. Resubmitted with IGS Finals on 2026-09-24 — the position was
+   confirmed to within 5 mm but the sigmas did **not** tighten, because Galileo turned out
+   to be unusable with this receiver. See "Finals rerun" below.
 3. **First run was NAD83 and is void** — see below.
 
 ### Runs
 
-| Run | Frame | Verdict |
-|---|---|---|
-| 1st | NAD83(CSRS) | **VOID — not applied.** NAD83 tab was left selected at submit. NAD83 is pinned to the North American plate, so in Sweden it sits ~2.3 m off ITRF; the report's 1.50 m / 1.67 m / 0.49 m "correction" is that datum shift, not a position fix. |
-| 2nd | IGc20 (ITRF2020) | **Valid — the result above.** |
+| Run | Date | Frame | Products | Verdict |
+|---|---|---|---|---|
+| 1st | 2026-09-02 | NAD83(CSRS) | ultra-rapid | **VOID — not applied.** NAD83 tab was left selected at submit. NAD83 is pinned to the North American plate, so in Sweden it sits ~2.3 m off ITRF; the report's 1.50 m / 1.67 m / 0.49 m "correction" is that datum shift, not a position fix. |
+| 2nd | 2026-09-02 | IGc20 (ITRF2020) | ultra-rapid | **Valid — the applied result above.** |
+| 3rd | 2026-09-24 | IGc20 (ITRF2020) | **Final** (`EMR0MGBFIN`) | **Valid — confirms run 2. Not applied**, see below. |
 
 **Lesson: always check `SYST` in the `.sum` POS block (and `FRAME` in `.pos`) before
 applying anything.** A wrong-datum solution passes every quality gate — the residuals,
 ambiguity resolution and variance factor were identical in both runs.
+
+### Finals rerun (2026-09-24) — confirmation, not correction
+
+The same 30 s file resubmitted once IGS Finals were published, to pick up Galileo and
+better orbits/clocks. Verified `SP3`/`CLK` read `EMR0MGBFIN` (not `...ULT`) and `SYST`
+reads `IGc20`.
+
+| | Δ vs the applied position | σ (95 %) |
+|---|---|---|
+| Lat | −1.6 mm | 3.7 mm (unchanged) |
+| Lon | +2.7 mm | 2.6 mm (unchanged) |
+| Height | +4.8 mm | 11.5 mm (was 11.6) |
+
+`IAR GPS` 94.84 % → 95.36 %, `AVF` 1.000, residuals unchanged. Every difference sits
+inside the formal uncertainty, so **the run-2 position was left in service**. A 5 mm shift
+is well below the real error floor here, which is dominated by the uncalibrated antenna's
+unknown phase-centre offset (several cm in height).
+
+**Galileo gives nothing with this receiver, and cannot.** The Finals run did process
+Galileo — that warning disappeared — but the `.sum` shows `OBS E C1X L1X`, i.e. E1 only,
+with `IAR GAL OFF` and phase residuals of exactly `0.000` at every elevation: Galileo
+phase was not used in the solution, only its pseudoranges. The RINEX carries E1 **and**
+E5b (`C7X/L7X`). The likely cause is that the standard iono-free Galileo combination is
+E1+**E5a**, while the ZED-F9P tracks E1+**E5b** — in which case no submission setting will
+produce dual-frequency Galileo at NRCan with this receiver. Don't spend another run
+chasing it.
 
 ## Files (local only, not in this repo)
 
@@ -76,7 +104,8 @@ ambiguity resolution and variance factor were identical in both runs.
 | `HOMEBASE_1Hz.26O.gz` | 95.6 MB (383 MB raw) | RINEX 3.04 OBS, 1 Hz, 66 172 epochs — full-rate original |
 | `HOMEBASE_1Hz.26N` | 878 kB | matching broadcast NAV |
 | `full_output/` | | NRCan report set, NAD83 run (void) |
-| `full_output_itrf/` | | NRCan report set, ITRF run (valid): `.sum`, `.pos`, `.csv`, `.pdf`, `.clk`, `.tro` |
+| `full_output_itrf/` | | NRCan report set, ITRF run (valid, applied): `.sum`, `.pos`, `.csv`, `.pdf`, `.clk`, `.tro` |
+| `full_output_finals/` | | NRCan report set, IGS Finals run (valid, confirms the applied position) |
 
 **Submit the 30 s file.** Both NRCan and AUSPOS decimate to 30 s internally for
 static solutions, so the 1 Hz version buys no accuracy — only upload time and the
